@@ -1,0 +1,12 @@
+FROM python:3.9-slim
+
+WORKDIR /app
+
+# Added plotly here
+RUN pip install streamlit requests pandas plotly
+
+COPY frontend.py .
+
+EXPOSE 8501
+
+CMD ["streamlit", "run", "frontend.py", "--server.port=8501", "--server.address=0.0.0.0"]

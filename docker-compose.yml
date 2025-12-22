@@ -8,6 +8,8 @@ services:
     environment:
       ZOOKEEPER_CLIENT_PORT: 2181
       ZOOKEEPER_TICK_TIME: 2000
+    networks:
+      - search-network
 
   kafka:
     image: confluentinc/cp-kafka:7.5.0
@@ -27,27 +29,101 @@ services:
       KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
       KAFKA_TRANSACTION_STATE_LOG_MIN_ISR: 1
       KAFKA_TRANSACTION_STATE_LOG_REPLICATION_FACTOR: 1
+      KAFKA_AUTO_CREATE_TOPICS_ENABLE: "true"
+    networks:
+      - search-network
+    healthcheck:
+      test:
+        [
+          "CMD",
+          "kafka-broker-api-versions",
+          "--bootstrap-server",
+          "localhost:9092",
+        ]
+      interval: 10s
+      timeout: 5s
+      retries: 5
 
-  spark-master:
-    image: apache/spark:3.5.7
-    hostname: spark-master
-    container_name: spark-master
-    command: ["/opt/spark/bin/spark-class", "org.apache.spark.deploy.master.Master"]
+  qdrant:
+    image: qdrant/qdrant:latest
+    container_name: qdrant
     ports:
-      - "7077:7077"
-      - "8080:8080"
+      - "6333:6333"
+      - "6334:6334"
+    networks:
+      - search-network
+    volumes:
+      - qdrant_storage:/qdrant/storage
 
-  spark-worker:
-    image: apache/spark:3.5.7
-    hostname: spark-worker
-    container_name: spark-worker
+  spark-dev:
+    image: jupyter/pyspark-notebook:latest
+    container_name: spark-dev
+    ports:
+      - "4040:4040"
+      - "8888:8888"
+    user: root
+    volumes:
+      - ./:/home/jovyan/work
+    working_dir: /home/jovyan/work
+    environment:
+      - KAFKA_BOOTSTRAP_SERVERS=kafka:29092
+      - KAFKA_TOPIC=news_stream
+      - VECTOR_API_URL=http://qdrant:6333
+      - GRANT_SUDO=yes
+    networks:
+      - search-network
     depends_on:
-      - spark-master
-    command:
-      [
-        "/opt/spark/bin/spark-class",
-        "org.apache.spark.deploy.worker.Worker",
-        "spark://spark-master:7077",
-      ]
+      kafka:
+        condition: service_healthy
+      qdrant:
+        condition: service_started
+    entrypoint: /bin/bash
+    command: -c "pip install sentence-transformers confluent-kafka faker requests qdrant-client && echo 'Ready!' && tail -f /dev/null"
+
+  producer:
+    build:
+      context: .
+      dockerfile: Dockerfile.producer
+    container_name: producer
+    environment:
+      - KAFKA_BOOTSTRAP_SERVERS=kafka:29092
+      - KAFKA_TOPIC=news_stream
+      - PRODUCER_RATE=5
+    networks:
+      - search-network
+    depends_on:
+      kafka:
+        condition: service_healthy
+
+  search-api:
+    build:
+      context: .
+      dockerfile: Dockerfile.search
+    container_name: search-api
     ports:
-      - "8081:8081"
+      - "8000:8000"
+    environment:
+      - QDRANT_URL=http://qdrant:6333
+    networks:
+      - search-network
+    depends_on:
+      - qdrant
+  frontend:
+    build:
+      context: .
+      dockerfile: Dockerfile.frontend
+    container_name: frontend
+    ports:
+      - "8501:8501"
+    environment:
+      - API_URL=http://search-api:8000 # Note: Internal Docker DNS
+    networks:
+      - search-network
+    depends_on:
+      - search-api
+networks:
+  search-network:
+    driver: bridge
+
+volumes:
+  qdrant_storage:
