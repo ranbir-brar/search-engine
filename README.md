@@ -49,6 +49,23 @@ cd search-ui && npm run dev
 Collectors → Kafka → Spark (embeddings) → Qdrant ← FastAPI ← Next.js
 ```
 
+## Running Modes
+
+### Search Only (after data is indexed)
+
+```bash
+docker-compose up -d qdrant search-api
+cd search-ui && npm run dev
+```
+
+### Full Pipeline (data ingestion + search)
+
+```bash
+docker-compose up -d
+python producer.py
+docker-compose exec spark-dev python stream_processor.py
+```
+
 ## Tech Stack
 
 - **Streaming**: Kafka, Spark
