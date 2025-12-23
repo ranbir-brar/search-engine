@@ -119,6 +119,42 @@ def get_sources():
         return {"sources": []}
 
 
+@app.get("/browse")
+def browse(limit: int = 100, offset: int = 0):
+    """
+    [DEBUG] Browse all indexed resources.
+    This is for debugging only - not for production use.
+    """
+    try:
+        results, next_offset = client.scroll(
+            collection_name=COLLECTION_NAME,
+            limit=limit,
+            offset=offset,
+            with_payload=True
+        )
+        
+        items = []
+        for point in results:
+            if point.payload:
+                items.append({
+                    "id": str(point.id),
+                    "title": point.payload.get("title", "Untitled"),
+                    "source": point.payload.get("source", "Unknown"),
+                    "resource_type": point.payload.get("resource_type", "Paper"),
+                    "url": point.payload.get("url", "#"),
+                    "authors": point.payload.get("authors", []),
+                })
+        
+        return {
+            "items": items,
+            "count": len(items),
+            "offset": offset,
+            "next_offset": next_offset
+        }
+    except Exception as e:
+        return {"items": [], "count": 0, "error": str(e)}
+
+
 @app.post("/search", response_model=List[SearchResult])
 def search(query: SearchQuery):
     try:
