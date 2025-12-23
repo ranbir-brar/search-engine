@@ -108,19 +108,6 @@ services:
       - search-network
     depends_on:
       - qdrant
-  frontend:
-    build:
-      context: .
-      dockerfile: Dockerfile.frontend
-    container_name: frontend
-    ports:
-      - "8501:8501"
-    environment:
-      - API_URL=http://search-api:8000 # Note: Internal Docker DNS
-    networks:
-      - search-network
-    depends_on:
-      - search-api
 networks:
   search-network:
     driver: bridge

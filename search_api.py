@@ -1,18 +1,29 @@
 import os
 from fastapi import FastAPI, HTTPException
+from fastapi.middleware.cors import CORSMiddleware  # <--- IMPORT THIS
 from pydantic import BaseModel
 from sentence_transformers import SentenceTransformer
 from qdrant_client import QdrantClient
-from qdrant_client.http import models  # Needed for filters
+from qdrant_client.http import models
 from typing import List, Optional
 
 app = FastAPI(title="Neural Search API")
+
+# ### NEW CODE: ENABLE CORS ###
+# This tells the browser: "Allow requests from anywhere (like Next.js on port 3000)"
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],  # In production, set this to ["http://localhost:3000"]
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
+# #############################
 
 # --- Configuration ---
 QDRANT_URL = os.environ.get("QDRANT_URL", "http://qdrant:6333")
 COLLECTION_NAME = "news_articles"
 
-# --- Startup: Load Model & Connect ---
 print("Loading SentenceTransformer model...")
 model = SentenceTransformer("all-MiniLM-L6-v2")
 print("Model loaded!")
@@ -33,7 +44,6 @@ class SearchResult(BaseModel):
     score: float
 
 # --- Endpoints ---
-
 @app.get("/")
 def root():
     return {"message": "Neural Search API (Qdrant Backend)"}
@@ -53,7 +63,6 @@ def health():
 @app.get("/stats")
 def stats():
     try:
-        # This is the endpoint the frontend is looking for!
         info = client.get_collection(COLLECTION_NAME)
         return {
             "collection": COLLECTION_NAME,
@@ -61,24 +70,20 @@ def stats():
             "status": info.status
         }
     except Exception as e:
-        # Returns 0 stats if collection doesn't exist yet
         return {"collection": COLLECTION_NAME, "points_count": 0, "status": "not_found"}
 
 @app.get("/categories")
 def get_categories():
     try:
-        # This allows the dropdown filter to work
         results = client.scroll(
             collection_name=COLLECTION_NAME,
             limit=1000,
             with_payload=True
         )[0]
-        
         categories = set()
         for point in results:
             if point.payload and "category" in point.payload:
                 categories.add(point.payload["category"])
-        
         return {"categories": sorted(list(categories))}
     except Exception as e:
         return {"categories": []}
@@ -86,10 +91,9 @@ def get_categories():
 @app.post("/search", response_model=List[SearchResult])
 def search(query: SearchQuery):
     try:
-        # 1. Vectorize query
+        print(f"Received Query: {query.query}") # Debug Log
         query_vector = model.encode(query.query).tolist()
         
-        # 2. Build Filter
         query_filter = None
         if query.category and query.category != "All":
             query_filter = models.Filter(
@@ -101,7 +105,6 @@ def search(query: SearchQuery):
                 ]
             )
         
-        # 3. Search (Using the fixed query_points method)
         search_result = client.query_points(
             collection_name=COLLECTION_NAME,
             query=query_vector,
@@ -109,7 +112,6 @@ def search(query: SearchQuery):
             limit=query.limit
         )
         
-        # 4. Format Results
         results = []
         for point in search_result.points:
             results.append(
