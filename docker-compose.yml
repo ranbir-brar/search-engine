@@ -55,21 +55,20 @@ services:
     volumes:
       - qdrant_storage:/qdrant/storage
 
+  # --- UPDATED SERVICE ---
   spark-dev:
-    image: jupyter/pyspark-notebook:latest
+    build:
+      context: .
+      dockerfile: Dockerfile.spark
     container_name: spark-dev
-    ports:
-      - "4040:4040"
-      - "8888:8888"
-    user: root
+    # We mount /app so you can edit code locally and it updates in container
     volumes:
-      - ./:/home/jovyan/work
-    working_dir: /home/jovyan/work
+      - ./:/app
+    working_dir: /app
     environment:
       - KAFKA_BOOTSTRAP_SERVERS=kafka:29092
       - KAFKA_TOPIC=news_stream
       - VECTOR_API_URL=http://qdrant:6333
-      - GRANT_SUDO=yes
     networks:
       - search-network
     depends_on:
@@ -77,8 +76,7 @@ services:
         condition: service_healthy
       qdrant:
         condition: service_started
-    entrypoint: /bin/bash
-    command: -c "pip install sentence-transformers confluent-kafka faker requests qdrant-client && echo 'Ready!' && tail -f /dev/null"
+  # -----------------------
 
   producer:
     build:
@@ -108,6 +106,7 @@ services:
       - search-network
     depends_on:
       - qdrant
+
 networks:
   search-network:
     driver: bridge

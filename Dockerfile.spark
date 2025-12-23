@@ -1,0 +1,23 @@
+FROM python:3.10-slim
+
+# 1. Install Java (Required for Spark)
+RUN apt-get update && \
+    apt-get install -y default-jdk procps && \
+    rm -rf /var/lib/apt/lists/*
+
+# 2. Set JAVA_HOME so Spark can find it
+ENV JAVA_HOME=/usr/lib/jvm/default-java
+
+WORKDIR /app
+
+# 3. Install PySpark and your ML libraries
+RUN pip install --no-cache-dir \
+    pyspark==3.5.0 \
+    sentence-transformers \
+    confluent-kafka \
+    requests \
+    qdrant-client \
+    numpy
+
+# 4. Default command: Keep running so we can exec into it
+CMD ["tail", "-f", "/dev/null"]

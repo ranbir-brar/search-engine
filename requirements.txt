@@ -10,3 +10,6 @@ requests>=2.31.0
 sentence-transformers>=2.2.2
 snowflake-connector-python>=3.0.0
 uvicorn[standard]>=0.23.0
+kafka-python-ng
+feedparser
+beautifulsoup4

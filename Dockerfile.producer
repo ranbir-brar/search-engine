@@ -1,9 +1,15 @@
-FROM python:3.10-slim
+FROM python:3.9-slim
 
 WORKDIR /app
 
+# 1. Copy the requirements file first (for better caching)
+COPY requirements.txt .
+
+# 2. Install dependencies (including feedparser & beautifulsoup4)
+RUN pip install --no-cache-dir -r requirements.txt
+
+# 3. Copy the rest of the code
 COPY producer.py .
 
-RUN pip install --no-cache-dir confluent-kafka faker
-
-CMD ["python", "producer.py"]
+# 4. Run the producer
+CMD ["python", "-u", "producer.py"]
