@@ -1,6 +1,7 @@
 import sys
 import json
 import uuid
+import os
 from pyspark.sql import SparkSession
 from pyspark.sql.functions import from_json, col
 from pyspark.sql.types import StructType, StructField, StringType
@@ -14,6 +15,8 @@ KAFKA_TOPIC = "news_stream"
 QDRANT_HOST = "qdrant"
 QDRANT_PORT = 6333
 COLLECTION_NAME = "news_articles"
+KAFKA_BOOTSTRAP_SERVERS = os.environ.get("KAFKA_BOOTSTRAP_SERVERS", "kafka:29092")
+KAFKA_TOPIC = "news_stream"
 
 # --- Schema matching your new Producer ---
 schema = StructType([
