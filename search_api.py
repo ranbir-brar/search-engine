@@ -190,7 +190,7 @@ def search(query: SearchQuery):
             query=query_vector,
             query_filter=query_filter,
             limit=query.limit * 3,  # Fetch extra for deduplication
-            score_threshold=0.35
+            score_threshold=0.2
         )
         
         results = []

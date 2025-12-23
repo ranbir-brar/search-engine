@@ -81,11 +81,14 @@ class OCWCollector(BaseCollector):
         "/courses/6-041sc-probabilistic-systems-analysis-and-applied-probability-fall-2013/",
     ]
     
-    # Subpages with actual content
+    # Subpages with actual content (including exams and problem sets)
     CONTENT_PAGES = [
         "pages/lecture-notes/",
         "pages/syllabus/",
         "pages/readings/",
+        "pages/exams/",
+        "pages/assignments/",
+        "pages/problem-sets/",
     ]
     
     def __init__(self, course_urls: List[str] = None):
@@ -114,13 +117,20 @@ class OCWCollector(BaseCollector):
         """
         # Remove (PDF) suffix
         text = re.sub(r'\s*\(PDF\)\s*$', '', link_text, flags=re.IGNORECASE).strip()
+        text_lower = text.lower()
         
-        # Determine type
-        if 'recitation' in text.lower():
+        # Determine type based on keywords
+        if any(kw in text_lower for kw in ['exam', 'midterm', 'final', 'quiz', 'test']):
+            resource_type = "Exam"
+        elif any(kw in text_lower for kw in ['problem set', 'pset', 'assignment', 'homework']):
+            resource_type = "Problem Set"
+        elif 'solution' in text_lower:
+            resource_type = "Solutions"
+        elif 'recitation' in text_lower:
             resource_type = "Course Notes"
-        elif 'slide' in text.lower():
+        elif 'slide' in text_lower:
             resource_type = "Lecture Slides"
-        elif 'syllabus' in text.lower():
+        elif 'syllabus' in text_lower:
             resource_type = "Syllabus"
         else:
             resource_type = "Course Notes"

@@ -1,18 +1,19 @@
 """
-Atlas Academic Search Engine - Producer
-Orchestrates multiple collectors to ingest academic resources into Kafka.
+Atlas Course Materials Search Engine - Producer
+Orchestrates collectors to ingest course materials (lectures, exams, problem sets) into Kafka.
 """
 import os
 import json
 import time
 from kafka import KafkaProducer
-from collectors.arxiv_collector import ArxivCollector
 from collectors.ocw_collector import OCWCollector
 from collectors.stanford_collector import StanfordCollector
 from collectors.harvard_collector import HarvardCollector
 from collectors.yale_collector import YaleCollector
-from collectors.khan_collector import KhanAcademyCollector
-from collectors.openstax_collector import OpenStaxCollector
+from collectors.waterloo_collector import WaterlooCollector
+from collectors.uoft_collector import UofTCollector
+from collectors.ubc_collector import UBCCollector
+from collectors.mcgill_collector import McGillCollector
 
 
 # --- Kafka Configuration ---
@@ -25,7 +26,7 @@ ITEMS_PER_COLLECTOR = 500  # Max items per collector per run
 
 
 def main():
-    print("Starting Atlas Academic Resource Collector...")
+    print("Starting Atlas Course Materials Collector...")
     print(f"   Kafka: {KAFKA_BOOTSTRAP_SERVERS}")
     print(f"   Topic: {KAFKA_TOPIC}")
     print(f"   Interval: {COLLECTION_INTERVAL}s")
@@ -37,15 +38,18 @@ def main():
         value_serializer=lambda x: json.dumps(x).encode('utf-8')
     )
 
-    # Initialize Collectors
+    # Initialize Collectors - US + Canadian Schools
     collectors = [
-        ArxivCollector(),
-        OCWCollector(),
-        StanfordCollector(),
-        HarvardCollector(),
-        YaleCollector(),
-        KhanAcademyCollector(),
-        OpenStaxCollector(),
+        # US Schools
+        OCWCollector(),        # MIT OpenCourseWare
+        StanfordCollector(),   # Stanford Engineering Everywhere
+        HarvardCollector(),    # Harvard CS50
+        YaleCollector(),       # Yale Open Yale Courses
+        # Canadian Schools
+        WaterlooCollector(),   # University of Waterloo
+        UofTCollector(),       # University of Toronto
+        UBCCollector(),        # University of British Columbia
+        McGillCollector(),     # McGill University
     ]
     
     print(f"Loaded {len(collectors)} collectors:")

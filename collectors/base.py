@@ -18,7 +18,7 @@ class BaseCollector(ABC):
     """
     
     # Valid resource types
-    RESOURCE_TYPES = ["Paper", "Lecture Slides", "Course Notes", "Syllabus"]
+    RESOURCE_TYPES = ["Lecture Slides", "Course Notes", "Syllabus", "Exam", "Problem Set", "Solutions"]
     
     def __init__(self, name: str):
         self.name = name
