@@ -42,6 +42,7 @@ class SearchResult(BaseModel):
     content: str
     category: str
     score: float
+    url:str
 
 # --- Endpoints ---
 @app.get("/")
@@ -118,8 +119,9 @@ def search(query: SearchQuery):
                 SearchResult(
                     id=str(point.id),
                     title=point.payload.get("title", "No Title"),
-                    content=point.payload.get("content", ""),
-                    category=point.payload.get("category", "Uncategorized"),
+                    url=point.payload.get("url", "#"), # <--- ADD THIS
+                    content=point.payload.get("content", ""), # This is now the specific chunk!
+                    category=point.payload.get("source", "Unknown"), # Changed from category to source
                     score=point.score
                 )
             )

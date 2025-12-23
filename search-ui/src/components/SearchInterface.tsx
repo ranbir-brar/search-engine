@@ -6,6 +6,7 @@ import { Search, Server, AlertCircle, ListFilter } from "lucide-react";
 interface SearchResult {
   id: string;
   title: string;
+  url: string;
   content: string;
   category: string;
   score: number;
@@ -169,7 +170,14 @@ export default function SearchInterface() {
               </span>
             </div>
             <h3 className="text-lg font-semibold text-white mb-2">
-              {result.title}
+              <a
+                href={result.url}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="hover:underline hover:text-blue-400"
+              >
+                {result.title}
+              </a>
             </h3>
             <p className="text-neutral-400 text-sm leading-relaxed line-clamp-3">
               {result.content}

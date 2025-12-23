@@ -1,66 +1,70 @@
-import asyncio
-import json
-import os
-import random
 import time
-import uuid
+import json
+import feedparser
+from kafka import KafkaProducer
+from bs4 import BeautifulSoup
 
-from confluent_kafka import Producer
-from faker import Faker
+# A curated list of high-quality engineering blogs
+RSS_FEEDS = [
+    "https://netflixtechblog.com/feed",
+    "https://eng.uber.com/feed/",
+    "https://airbnb.io/feed.xml",
+    "https://instagram-engineering.com/feed",
+    "https://engineering.atspotify.com/feed/",
+    "https://github.blog/category/engineering/feed/",
+    "https://discord.com/blog/rss",
+    "https://aws.amazon.com/blogs/architecture/feed/"
+]
 
-TOPIC = os.environ.get("KAFKA_TOPIC", "news_stream")
-BOOTSTRAP_SERVERS = os.environ.get("KAFKA_BOOTSTRAP_SERVERS", "localhost:9092")
-RATE_PER_SEC = int(os.environ.get("PRODUCER_RATE", "10"))
+def clean_html(html_content):
+    soup = BeautifulSoup(html_content, "html.parser")
+    return soup.get_text(separator=" ", strip=True)
 
-CATEGORIES = ["AI", "Crypto", "Cloud", "Security", "Mobile", "Startups", "Hardware"]
-
-faker = Faker()
-
-
-def delivery_report(err, msg):
-    if err is not None:
-        print(f"Delivery failed: {err}")
-
-
-def generate_article():
-    category = random.choice(CATEGORIES)
-    return {
-        "id": str(uuid.uuid4()),
-        "title": faker.sentence(nb_words=8),
-        "content": faker.paragraph(nb_sentences=5),
-        "timestamp": int(time.time()),
-        "category": category,
-    }
-
-
-async def produce_loop(producer: Producer) -> None:
-    interval = 1.0 / max(RATE_PER_SEC, 1)
-    while True:
-        article = generate_article()
-        producer.produce(
-            TOPIC,
-            key=article["category"].encode("utf-8"),
-            value=json.dumps(article).encode("utf-8"),
-            on_delivery=delivery_report,
-        )
-        producer.poll(0)
-        await asyncio.sleep(interval)
-
-
-def main() -> None:
-    producer = Producer(
-        {
-            "bootstrap.servers": BOOTSTRAP_SERVERS,
-            "client.id": "tech-news-producer",
-        }
+def main():
+    producer = KafkaProducer(
+        bootstrap_servers=['localhost:9092'],
+        value_serializer=lambda x: json.dumps(x).encode('utf-8')
     )
-    try:
-        asyncio.run(produce_loop(producer))
-    except KeyboardInterrupt:
-        print("Stopping producer...")
-    finally:
-        producer.flush(5)
+    
+    seen_links = set()
 
+    print("🚀 Starting Tech Blog Crawler...")
+
+    while True:
+        for feed_url in RSS_FEEDS:
+            try:
+                print(f"Checking {feed_url}...")
+                feed = feedparser.parse(feed_url)
+                
+                for entry in feed.entries[:5]: # Check latest 5 entries per feed
+                    if entry.link not in seen_links:
+                        
+                        # Clean the content (RSS often has HTML)
+                        raw_content = entry.get("content", [{"value": ""}])[0]["value"] or entry.get("summary", "")
+                        clean_text = clean_html(raw_content)
+
+                        # Skip empty articles
+                        if len(clean_text) < 100:
+                            continue
+
+                        payload = {
+                            "title": entry.title,
+                            "url": entry.link,
+                            "published": entry.get("published", ""),
+                            "source": feed.feed.get("title", "Tech Blog"),
+                            "content": clean_text,
+                            # Important: We will chunk this in the Spark job
+                        }
+                        
+                        producer.send('news_stream', payload)
+                        print(f"Sent: {entry.title}")
+                        seen_links.add(entry.link)
+                        
+            except Exception as e:
+                print(f"Error parsing {feed_url}: {e}")
+        
+        print("Sleeping for 5 minutes...")
+        time.sleep(300) # Poll every 5 mins
 
 if __name__ == "__main__":
     main()
