@@ -18,7 +18,6 @@ COLLECTION_NAME = "news_articles"
 KAFKA_BOOTSTRAP_SERVERS = os.environ.get("KAFKA_BOOTSTRAP_SERVERS", "kafka:29092")
 KAFKA_TOPIC = "news_stream"
 
-# --- Schema matching your new Producer ---
 schema = StructType([
     StructField("title", StringType()),
     StructField("url", StringType()),
@@ -49,19 +48,22 @@ def process_batch(df, epoch_id):
         return
 
     print(f"Processing batch {epoch_id} with {len(rows)} articles...")
+    sys.stdout.flush()
 
     # Initialize clients inside the executor/worker context
     try:
-        # Note: In a massive production cluster, you'd broadcast the model. 
-        # For this scale, loading it per batch is fine and safer for serialization.
         model = SentenceTransformer("all-MiniLM-L6-v2")
         client = QdrantClient(host=QDRANT_HOST, port=QDRANT_PORT)
         
-        # Ensure collection exists
-        client.recreate_collection(
-            collection_name=COLLECTION_NAME,
-            vectors_config=VectorParams(size=384, distance=Distance.COSINE),
-        )
+        # Ensure collection exists (only create if not exists)
+        try:
+             client.get_collection(COLLECTION_NAME)
+        except:
+             print("Creating collection...")
+             client.recreate_collection(
+                collection_name=COLLECTION_NAME,
+                vectors_config=VectorParams(size=384, distance=Distance.COSINE),
+             )
     except Exception as e:
         print(f"Error initializing resources: {e}")
         return
@@ -75,25 +77,23 @@ def process_batch(df, epoch_id):
         # 1. Chunk the article
         chunks = chunk_text(row.content)
         print(f"Article '{row.title}' split into {len(chunks)} chunks.")
-
+        
         for i, chunk_text_str in enumerate(chunks):
             try:
                 # 2. Embed the chunk
                 vector = model.encode(chunk_text_str).tolist()
                 
                 # 3. Create Payload (Metadata)
-                # We store the chunk text so the search result highlights the specific answer
                 payload = {
                     "title": row.title,
                     "url": row.url,
                     "source": row.source,
-                    "content": chunk_text_str,  # The specific passage
+                    "content": chunk_text_str, 
                     "full_article_preview": row.content[:200], # Context
                     "chunk_index": i
                 }
 
                 # 4. Create Point
-                # We use a UUID so chunks don't overwrite each other
                 points.append(PointStruct(
                     id=str(uuid.uuid4()),
                     vector=vector,
@@ -101,7 +101,7 @@ def process_batch(df, epoch_id):
                 ))
             except Exception as e:
                 print(f"Error embedding chunk: {e}")
-
+    
     # 5. Upsert to Qdrant
     if points:
         try:
@@ -110,6 +110,7 @@ def process_batch(df, epoch_id):
                 points=points
             )
             print(f"Successfully upserted {len(points)} chunks to Qdrant.")
+            sys.stdout.flush()
         except Exception as e:
             print(f"Failed to upsert to Qdrant: {e}")
 
@@ -126,7 +127,7 @@ def main():
         .format("kafka") \
         .option("kafka.bootstrap.servers", KAFKA_BOOTSTRAP_SERVERS) \
         .option("subscribe", KAFKA_TOPIC) \
-        .option("startingOffsets", "latest") \
+        .option("startingOffsets", "earliest") \
         .load()
 
     # Parse JSON

@@ -50,7 +50,7 @@ export default function SearchInterface() {
 
     setLoading(true);
     setError("");
-    setHasSearched(false); // Reset this while searching
+    setHasSearched(false);
 
     try {
       const response = await fetch(`${API_URL}/search`, {
@@ -58,18 +58,32 @@ export default function SearchInterface() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           query: query,
-          limit: limit, // Using the state variable
+          limit: limit,
           category: null,
         }),
       });
 
-      if (!response.ok) throw new Error("Search failed");
-
       const data = await response.json();
-      setResults(data);
-      setHasSearched(true); // NOW we allow the empty state to show if needed
-    } catch (err) {
-      setError("Failed to fetch results. Is the backend running?");
+
+      // --- DEBUGGING LOG ---
+      console.log("API Response:", data);
+
+      if (!response.ok) {
+        throw new Error(data.detail || "Search failed");
+      }
+
+      // --- SAFETY CHECK ---
+      if (Array.isArray(data)) {
+        setResults(data);
+        setHasSearched(true);
+      } else {
+        console.error("Expected array but got:", data);
+        setResults([]); // Fallback to empty array to prevent crash
+        setError("API returned invalid data format");
+      }
+    } catch (err: any) {
+      console.error("Search Error:", err);
+      setError(err.message || "Failed to fetch results");
       setResults([]);
     } finally {
       setLoading(false);

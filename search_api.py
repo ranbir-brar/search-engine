@@ -9,16 +9,13 @@ from typing import List, Optional
 
 app = FastAPI(title="Neural Search API")
 
-# ### NEW CODE: ENABLE CORS ###
-# This tells the browser: "Allow requests from anywhere (like Next.js on port 3000)"
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],  # In production, set this to ["http://localhost:3000"]
+    allow_origins=["*"],
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
 )
-# #############################
 
 # --- Configuration ---
 QDRANT_URL = os.environ.get("QDRANT_URL", "http://qdrant:6333")
@@ -106,22 +103,37 @@ def search(query: SearchQuery):
                 ]
             )
         
+        # Fetch more candidates to allow for deduplication
         search_result = client.query_points(
             collection_name=COLLECTION_NAME,
             query=query_vector,
             query_filter=query_filter,
-            limit=query.limit
+            limit=query.limit * 3  # Fetch 3x to handle duplicates
         )
         
         results = []
+        seen_urls = set()
+        
         for point in search_result.points:
+            url = point.payload.get("url", "#")
+            
+            # Skip duplicates
+            if url in seen_urls:
+                continue
+                
+            seen_urls.add(url)
+            
+            # Stop if we have enough unique results
+            if len(results) >= query.limit:
+                break
+                
             results.append(
                 SearchResult(
                     id=str(point.id),
                     title=point.payload.get("title", "No Title"),
-                    url=point.payload.get("url", "#"), # <--- ADD THIS
-                    content=point.payload.get("content", ""), # This is now the specific chunk!
-                    category=point.payload.get("source", "Unknown"), # Changed from category to source
+                    url=url,
+                    content=point.payload.get("content", ""),
+                    category=point.payload.get("source", "Unknown"),
                     score=point.score
                 )
             )

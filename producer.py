@@ -58,7 +58,6 @@ def main():
                             "published": entry.get("published", ""),
                             "source": feed.feed.get("title", "Tech Blog"),
                             "content": clean_text,
-                            # Important: We will chunk this in the Spark job
                         }
                         
                         try:
