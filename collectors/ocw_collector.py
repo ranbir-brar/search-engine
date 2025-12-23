@@ -18,11 +18,67 @@ class OCWCollector(BaseCollector):
     
     BASE_URL = "https://ocw.mit.edu"
     
+    # Comprehensive course list across MIT departments
     COURSE_URLS = [
+        # Mathematics (10)
+        "/courses/18-01sc-single-variable-calculus-fall-2010/",
+        "/courses/18-02sc-multivariable-calculus-fall-2010/",
+        "/courses/18-03sc-differential-equations-fall-2011/",
+        "/courses/18-05-introduction-to-probability-and-statistics-spring-2022/",
+        "/courses/18-06sc-linear-algebra-fall-2011/",
+        "/courses/18-065-matrix-methods-in-data-analysis-signal-processing-and-machine-learning-spring-2018/",
+        "/courses/18-100a-real-analysis-fall-2020/",
+        "/courses/18-404j-theory-of-computation-fall-2020/",
+        "/courses/18-650-statistics-for-applications-fall-2016/",
+        "/courses/18-s096-topics-in-mathematics-with-applications-in-finance-fall-2013/",
+        # Computer Science (12)
         "/courses/6-006-introduction-to-algorithms-spring-2020/",
         "/courses/6-0001-introduction-to-computer-science-and-programming-in-python-fall-2016/",
-        "/courses/18-06sc-linear-algebra-fall-2011/",
         "/courses/6-0002-introduction-to-computational-thinking-and-data-science-fall-2016/",
+        "/courses/6-004-computation-structures-spring-2017/",
+        "/courses/6-005-software-construction-spring-2016/",
+        "/courses/6-033-computer-system-engineering-spring-2018/",
+        "/courses/6-034-artificial-intelligence-fall-2010/",
+        "/courses/6-036-introduction-to-machine-learning-fall-2020/",
+        "/courses/6-042j-mathematics-for-computer-science-fall-2010/",
+        "/courses/6-046j-design-and-analysis-of-algorithms-spring-2015/",
+        "/courses/6-801-machine-vision-fall-2020/",
+        "/courses/6-824-distributed-computer-systems-engineering-spring-2006/",
+        # Physics (8)
+        "/courses/8-01sc-classical-mechanics-fall-2016/",
+        "/courses/8-02-physics-ii-electricity-and-magnetism-spring-2019/",
+        "/courses/8-03sc-physics-iii-vibrations-and-waves-fall-2016/",
+        "/courses/8-04-quantum-physics-i-spring-2016/",
+        "/courses/8-05-quantum-physics-ii-fall-2013/",
+        "/courses/8-06-quantum-physics-iii-spring-2018/",
+        "/courses/8-333-statistical-mechanics-i-statistical-mechanics-of-particles-fall-2013/",
+        "/courses/8-962-general-relativity-spring-2020/",
+        # Chemistry (6)
+        "/courses/5-111sc-principles-of-chemical-science-fall-2014/",
+        "/courses/5-12-organic-chemistry-i-spring-2005/",
+        "/courses/5-13-organic-chemistry-ii-fall-2006/",
+        "/courses/5-60-thermodynamics-kinetics-spring-2008/",
+        "/courses/5-61-physical-chemistry-fall-2017/",
+        "/courses/5-07sc-biological-chemistry-i-fall-2013/",
+        # Biology (6)
+        "/courses/7-01sc-fundamentals-of-biology-fall-2011/",
+        "/courses/7-012-introduction-to-biology-fall-2004/",
+        "/courses/7-013-introductory-biology-spring-2018/",
+        "/courses/7-016-introductory-biology-fall-2018/",
+        "/courses/7-06-cell-biology-spring-2007/",
+        "/courses/7-28-molecular-biology-spring-2005/",
+        # Economics (6)
+        "/courses/14-01sc-principles-of-microeconomics-fall-2011/",
+        "/courses/14-02-principles-of-macroeconomics-spring-2023/",
+        "/courses/14-30-introduction-to-statistical-methods-in-economics-spring-2009/",
+        "/courses/14-41-public-finance-and-public-policy-spring-2016/",
+        "/courses/14-73-the-challenge-of-world-poverty-spring-2011/",
+        "/courses/15-401-finance-theory-i-fall-2008/",
+        # Electrical Engineering (4)
+        "/courses/6-002-circuits-and-electronics-spring-2007/",
+        "/courses/6-003-signals-and-systems-fall-2011/",
+        "/courses/6-011-signals-systems-and-inference-spring-2018/",
+        "/courses/6-041sc-probabilistic-systems-analysis-and-applied-probability-fall-2013/",
     ]
     
     # Subpages with actual content

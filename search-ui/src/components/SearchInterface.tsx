@@ -79,12 +79,14 @@ export default function SearchInterface() {
 
   // Search state
   const [query, setQuery] = useState("");
+  const [searchedQuery, setSearchedQuery] = useState(""); // The query that was actually searched
   const [results, setResults] = useState<SearchResult[]>([]);
   const [limit, setLimit] = useState<string>("10");
   const [resourceType, setResourceType] = useState<string>("All");
   const [hasSearched, setHasSearched] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
+  const [suggestion, setSuggestion] = useState<string | null>(null);
 
   // Browse state
   const [browseItems, setBrowseItems] = useState<BrowseItem[]>([]);
@@ -112,6 +114,55 @@ export default function SearchInterface() {
     checkHealth();
   }, []);
 
+  // Simple spell check - common misspellings
+  const getSpellingSuggestion = (term: string): string | null => {
+    const corrections: Record<string, string> = {
+      algoritm: "algorithm",
+      algorythm: "algorithm",
+      algroithm: "algorithm",
+      machin: "machine",
+      machien: "machine",
+      learing: "learning",
+      learnign: "learning",
+      neaural: "neural",
+      nueral: "neural",
+      netwrok: "network",
+      netowrk: "network",
+      programing: "programming",
+      programmin: "programming",
+      optimzation: "optimization",
+      optmization: "optimization",
+      artifical: "artificial",
+      artifcial: "artificial",
+      inteligence: "intelligence",
+      intelgence: "intelligence",
+      structre: "structure",
+      struture: "structure",
+      databse: "database",
+      datbase: "database",
+      compuer: "computer",
+      computor: "computer",
+      cryptogrpahy: "cryptography",
+      criptography: "cryptography",
+      linera: "linear",
+      linaer: "linear",
+      algebre: "algebra",
+      algerbra: "algebra",
+    };
+
+    const words = term.toLowerCase().split(/\s+/);
+    let hasSuggestion = false;
+    const correctedWords = words.map((word) => {
+      if (corrections[word]) {
+        hasSuggestion = true;
+        return corrections[word];
+      }
+      return word;
+    });
+
+    return hasSuggestion ? correctedWords.join(" ") : null;
+  };
+
   const handleSearch = async (e?: React.FormEvent) => {
     if (e) e.preventDefault();
     if (!query.trim()) return;
@@ -119,6 +170,8 @@ export default function SearchInterface() {
     setLoading(true);
     setError("");
     setHasSearched(false);
+    setSuggestion(null);
+    setSearchedQuery(query.trim()); // Store the query that was searched
 
     try {
       const response = await fetch(`${API_URL}/search`, {
@@ -140,6 +193,14 @@ export default function SearchInterface() {
       if (Array.isArray(data)) {
         setResults(data);
         setHasSearched(true);
+
+        // If no results, check for spelling suggestion
+        if (data.length === 0) {
+          const spellingSuggestion = getSpellingSuggestion(query);
+          if (spellingSuggestion) {
+            setSuggestion(spellingSuggestion);
+          }
+        }
       } else {
         setResults([]);
         setError("API returned invalid data format");
@@ -149,6 +210,17 @@ export default function SearchInterface() {
       setResults([]);
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handleSuggestionClick = () => {
+    if (suggestion) {
+      setQuery(suggestion);
+      // Trigger search with the suggestion
+      setTimeout(() => {
+        const form = document.querySelector("form");
+        if (form) form.requestSubmit();
+      }, 0);
     }
   };
 
@@ -370,10 +442,26 @@ export default function SearchInterface() {
                 <div className="text-center py-16">
                   <div className="text-muted-foreground">
                     <Search className="size-12 mx-auto mb-4 opacity-30" />
-                    <p className="text-lg">No results found for "{query}"</p>
-                    <p className="text-sm mt-1">
-                      Try different keywords or adjust your filters
+                    <p className="text-lg">
+                      No results found for "{searchedQuery}"
                     </p>
+                    {suggestion && (
+                      <p className="text-sm mt-2">
+                        Did you mean:{" "}
+                        <button
+                          onClick={handleSuggestionClick}
+                          className="text-primary hover:underline font-medium"
+                        >
+                          {suggestion}
+                        </button>
+                        ?
+                      </p>
+                    )}
+                    {!suggestion && (
+                      <p className="text-sm mt-1">
+                        Try different keywords or adjust your filters
+                      </p>
+                    )}
                   </div>
                 </div>
               )}

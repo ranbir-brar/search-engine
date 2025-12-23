@@ -14,8 +14,9 @@ class ArxivCollector(BaseCollector):
     Uses the arxiv Python library to fetch papers from various categories.
     """
     
-    # CS-focused categories for student relevance
+    # Comprehensive academic categories across disciplines
     DEFAULT_CATEGORIES = [
+        # Computer Science - Core (8)
         "cs.AI",      # Artificial Intelligence
         "cs.LG",      # Machine Learning
         "cs.CL",      # Computation and Language (NLP)
@@ -24,6 +25,48 @@ class ArxivCollector(BaseCollector):
         "cs.DB",      # Databases
         "cs.DS",      # Data Structures and Algorithms
         "cs.CR",      # Cryptography and Security
+        # Computer Science - Extended (12)
+        "cs.NE",      # Neural and Evolutionary Computing
+        "cs.RO",      # Robotics
+        "cs.SI",      # Social and Information Networks
+        "cs.PL",      # Programming Languages
+        "cs.DC",      # Distributed Computing
+        "cs.HC",      # Human-Computer Interaction
+        "cs.IR",      # Information Retrieval
+        "cs.NI",      # Networking and Internet Architecture
+        "cs.GT",      # Game Theory
+        "cs.CE",      # Computational Engineering
+        "cs.CY",      # Computers and Society
+        "cs.SC",      # Symbolic Computation
+        # Mathematics (10)
+        "math.NA",    # Numerical Analysis
+        "math.CA",    # Classical Analysis (Calculus)
+        "stat.TH",    # Statistics Theory
+        "math.PR",    # Probability
+        "math.CO",    # Combinatorics
+        "math.OC",    # Optimization and Control
+        "math.AG",    # Algebraic Geometry
+        "math.DG",    # Differential Geometry
+        "math.NT",    # Number Theory
+        "math.FA",    # Functional Analysis
+        # Physics (8)
+        "physics.gen-ph",     # General Physics
+        "physics.class-ph",   # Classical Physics
+        "physics.comp-ph",    # Computational Physics
+        "quant-ph",           # Quantum Physics
+        "cond-mat.stat-mech", # Statistical Mechanics
+        "hep-th",             # High Energy Physics Theory
+        "astro-ph.CO",        # Cosmology
+        "physics.ed-ph",      # Physics Education
+        # Biology and Chemistry (4)
+        "q-bio.GN",   # Genomics
+        "q-bio.NC",   # Neurons and Cognition
+        "q-bio.MN",   # Molecular Networks
+        "physics.chem-ph",  # Chemical Physics
+        # Economics and Finance (3)
+        "econ.EM",    # Econometrics
+        "econ.GN",    # General Economics
+        "q-fin.PM",   # Portfolio Management
     ]
     
     def __init__(self, categories: List[str] = None):

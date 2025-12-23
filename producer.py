@@ -11,6 +11,8 @@ from collectors.ocw_collector import OCWCollector
 from collectors.stanford_collector import StanfordCollector
 from collectors.harvard_collector import HarvardCollector
 from collectors.yale_collector import YaleCollector
+from collectors.khan_collector import KhanAcademyCollector
+from collectors.openstax_collector import OpenStaxCollector
 
 
 # --- Kafka Configuration ---
@@ -19,7 +21,7 @@ KAFKA_TOPIC = 'atlas_resources'
 
 # --- Collection Configuration ---
 COLLECTION_INTERVAL = 300  # 5 minutes between collection runs
-ITEMS_PER_COLLECTOR = 100  # Max items per collector per run
+ITEMS_PER_COLLECTOR = 500  # Max items per collector per run
 
 
 def main():
@@ -42,6 +44,8 @@ def main():
         StanfordCollector(),
         HarvardCollector(),
         YaleCollector(),
+        KhanAcademyCollector(),
+        OpenStaxCollector(),
     ]
     
     print(f"Loaded {len(collectors)} collectors:")

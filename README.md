@@ -1,83 +1,58 @@
-# 🎓 Atlas - Academic Search Engine
+# Atlas Academic Search Engine
 
-A semantic search engine for academic resources: research papers, lecture notes, and course materials.
+Semantic search for academic resources: research papers, lectures, textbooks, and course materials.
 
-## Architecture
+## Data Sources (7 Collectors)
 
-```mermaid
-graph LR
-    A[arXiv API] -->|ArxivCollector| K(Kafka)
-    B[MIT OCW] -->|OCWCollector| K
-    K -->|Spark| S(Stream Processor)
-    S -->|Embeddings| Q[(Qdrant)]
-    U[Student] -->|Query| F(FastAPI)
-    F -->|Search| Q
-```
+| Source           | Content                                               |
+| ---------------- | ----------------------------------------------------- |
+| **arXiv**        | 45 categories (CS, Math, Physics, Biology, Economics) |
+| **MIT OCW**      | 52 courses across all departments                     |
+| **Stanford SEE** | 9 engineering courses                                 |
+| **Harvard CS50** | Intro CS (11 weeks)                                   |
+| **Open Yale**    | 8 interdisciplinary courses                           |
+| **Khan Academy** | 35 topics, 100+ lessons                               |
+| **OpenStax**     | 19 textbooks, 216 chapters                            |
 
-## Resource Types
-
-| Type           | Source  | Badge     |
-| -------------- | ------- | --------- |
-| Paper          | arXiv   | 🔵 Blue   |
-| Lecture Slides | MIT OCW | 🟠 Orange |
-| Course Notes   | MIT OCW | 🟢 Green  |
-| Syllabus       | MIT OCW | 🟣 Purple |
+**Expected: 10,000+ resources**
 
 ## Quick Start
 
-### 1. Start Infrastructure
-
 ```bash
-docker-compose up -d --build
-```
+# Start infrastructure
+docker-compose up -d
 
-### 2. Run Stream Processor
+# Run producer (collects resources)
+python producer.py
 
-```bash
+# Run stream processor (indexes to Qdrant)
 docker-compose exec spark-dev python stream_processor.py
-```
 
-### 3. Start Frontend
+# Start API
+uvicorn search_api:app --reload --port 8000
 
-```bash
-cd search-ui
-npm install
-npm run dev
-```
-
-### 4. Access
-
-| Service          | URL                             |
-| ---------------- | ------------------------------- |
-| Search UI        | http://localhost:3000           |
-| API Docs         | http://localhost:8000/docs      |
-| Qdrant Dashboard | http://localhost:6333/dashboard |
-
-## Project Structure
-
-```
-├── collectors/           # Modular data collectors
-│   ├── base.py          # BaseCollector class
-│   ├── arxiv_collector.py
-│   └── ocw_collector.py
-├── producer.py          # Orchestrates collectors → Kafka
-├── stream_processor.py  # Spark: Kafka → Embeddings → Qdrant
-├── search_api.py        # FastAPI search backend
-└── search-ui/           # Next.js frontend
-```
-
-## Running Modes
-
-### Search Only (Minimal Resources)
-
-```bash
-docker-compose up -d qdrant search-api
+# Start frontend
 cd search-ui && npm run dev
 ```
 
-### Full Pipeline (Live Ingestion)
+## Access
 
-```bash
-docker-compose up -d
-docker-compose exec spark-dev python stream_processor.py
+| Service   | URL                             |
+| --------- | ------------------------------- |
+| Search UI | http://localhost:3000           |
+| API Docs  | http://localhost:8000/docs      |
+| Qdrant    | http://localhost:6333/dashboard |
+
+## Architecture
+
 ```
+Collectors → Kafka → Spark (embeddings) → Qdrant ← FastAPI ← Next.js
+```
+
+## Tech Stack
+
+- **Streaming**: Kafka, Spark
+- **Vector DB**: Qdrant
+- **Embeddings**: sentence-transformers (all-MiniLM-L6-v2)
+- **API**: FastAPI
+- **Frontend**: Next.js
