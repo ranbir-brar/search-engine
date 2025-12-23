@@ -12,7 +12,7 @@ from collectors.ocw_collector import OCWCollector
 
 # --- Kafka Configuration ---
 KAFKA_BOOTSTRAP_SERVERS = os.environ.get('KAFKA_BOOTSTRAP_SERVERS', 'localhost:9092')
-KAFKA_TOPIC = 'news_stream'
+KAFKA_TOPIC = 'atlas_resources'
 
 # --- Collection Configuration ---
 COLLECTION_INTERVAL = 300  # 5 minutes between collection runs

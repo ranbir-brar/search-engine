@@ -67,7 +67,7 @@ services:
     working_dir: /app
     environment:
       - KAFKA_BOOTSTRAP_SERVERS=kafka:29092
-      - KAFKA_TOPIC=news_stream
+      - KAFKA_TOPIC=atlas_resources
       - VECTOR_API_URL=http://qdrant:6333
     networks:
       - search-network
@@ -85,7 +85,7 @@ services:
     container_name: producer
     environment:
       - KAFKA_BOOTSTRAP_SERVERS=kafka:29092
-      - KAFKA_TOPIC=news_stream
+      - KAFKA_TOPIC=atlas_resources
       - PRODUCER_RATE=5
     networks:
       - search-network

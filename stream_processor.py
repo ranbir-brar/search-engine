@@ -15,7 +15,7 @@ from qdrant_client.http.models import PointStruct, VectorParams, Distance
 
 # --- Configuration ---
 KAFKA_BOOTSTRAP_SERVERS = os.environ.get("KAFKA_BOOTSTRAP_SERVERS", "kafka:29092")
-KAFKA_TOPIC = "news_stream"
+KAFKA_TOPIC = "atlas_resources"
 QDRANT_HOST = "qdrant"
 QDRANT_PORT = 6333
 COLLECTION_NAME = "atlas_resources"  # Renamed for Atlas
