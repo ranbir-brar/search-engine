@@ -7,6 +7,10 @@ import {
   AlertCircle,
   Loader2,
   ExternalLink,
+  FileText,
+  BookOpen,
+  GraduationCap,
+  ClipboardList,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -16,7 +20,6 @@ import {
   CardTitle,
   CardDescription,
   CardContent,
-  CardFooter,
 } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import {
@@ -32,16 +35,41 @@ interface SearchResult {
   title: string;
   url: string;
   content: string;
-  category: string;
+  source: string;
+  resource_type: string;
+  authors: string[];
   score: number;
+  summary_preview?: string;
 }
 
 const API_URL = "http://localhost:8000";
+
+// Resource type badge styles
+const TYPE_STYLES: Record<string, { color: string; icon: React.ElementType }> =
+  {
+    Paper: {
+      color: "bg-blue-500/20 text-blue-400 border-blue-500/30",
+      icon: FileText,
+    },
+    "Lecture Slides": {
+      color: "bg-orange-500/20 text-orange-400 border-orange-500/30",
+      icon: BookOpen,
+    },
+    "Course Notes": {
+      color: "bg-green-500/20 text-green-400 border-green-500/30",
+      icon: GraduationCap,
+    },
+    Syllabus: {
+      color: "bg-purple-500/20 text-purple-400 border-purple-500/30",
+      icon: ClipboardList,
+    },
+  };
 
 export default function SearchInterface() {
   const [query, setQuery] = useState("");
   const [results, setResults] = useState<SearchResult[]>([]);
   const [limit, setLimit] = useState<string>("10");
+  const [resourceType, setResourceType] = useState<string>("All");
 
   // UX State
   const [hasSearched, setHasSearched] = useState(false);
@@ -83,7 +111,7 @@ export default function SearchInterface() {
         body: JSON.stringify({
           query: query,
           limit: parseInt(limit),
-          category: null,
+          resource_type: resourceType === "All" ? null : resourceType,
         }),
       });
 
@@ -110,6 +138,10 @@ export default function SearchInterface() {
     }
   };
 
+  const getTypeStyle = (type: string) => {
+    return TYPE_STYLES[type] || TYPE_STYLES.Paper;
+  };
+
   return (
     <div className="dark w-full min-h-screen bg-background py-12 px-4">
       <div className="w-full max-w-4xl mx-auto space-y-8">
@@ -117,10 +149,10 @@ export default function SearchInterface() {
         <div className="flex justify-between items-center border-b border-border pb-6">
           <div>
             <h1 className="text-3xl font-bold text-foreground tracking-tight">
-              Neural Search
+              🎓 Atlas
             </h1>
             <p className="text-muted-foreground text-sm mt-1">
-              Semantic search for engineering blogs
+              Academic search for papers, lectures, and course materials
             </p>
           </div>
 
@@ -148,45 +180,66 @@ export default function SearchInterface() {
         </div>
 
         {/* Search Form */}
-        <form onSubmit={handleSearch} className="flex gap-3">
-          <div className="relative flex-1">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground size-4" />
-            <Input
-              type="text"
-              value={query}
-              onChange={(e) => setQuery(e.target.value)}
-              placeholder="Search engineering blogs..."
-              className="pl-10 h-11 text-base"
-            />
+        <form onSubmit={handleSearch} className="space-y-4">
+          <div className="flex gap-3">
+            <div className="relative flex-1">
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground size-4" />
+              <Input
+                type="text"
+                value={query}
+                onChange={(e) => setQuery(e.target.value)}
+                placeholder="Search papers, lectures, course notes..."
+                className="pl-10 h-11 text-base"
+              />
+            </div>
+
+            <Button
+              type="submit"
+              size="lg"
+              disabled={loading || serverStatus === "offline"}
+              className="h-11 px-6"
+            >
+              {loading ? (
+                <>
+                  <Loader2 className="size-4 animate-spin" />
+                  Searching...
+                </>
+              ) : (
+                "Search"
+              )}
+            </Button>
           </div>
 
-          <Select value={limit} onValueChange={setLimit}>
-            <SelectTrigger className="w-[130px] h-11">
-              <SelectValue placeholder="Results" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="5">5 results</SelectItem>
-              <SelectItem value="10">10 results</SelectItem>
-              <SelectItem value="20">20 results</SelectItem>
-              <SelectItem value="50">50 results</SelectItem>
-            </SelectContent>
-          </Select>
+          {/* Filters Row */}
+          <div className="flex gap-3 items-center">
+            <span className="text-sm text-muted-foreground">Filter by:</span>
 
-          <Button
-            type="submit"
-            size="lg"
-            disabled={loading || serverStatus === "offline"}
-            className="h-11 px-6"
-          >
-            {loading ? (
-              <>
-                <Loader2 className="size-4 animate-spin" />
-                Searching...
-              </>
-            ) : (
-              "Search"
-            )}
-          </Button>
+            <Select value={resourceType} onValueChange={setResourceType}>
+              <SelectTrigger className="w-[160px]">
+                <SelectValue placeholder="Resource Type" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="All">All Types</SelectItem>
+                <SelectItem value="Paper">📄 Papers</SelectItem>
+                <SelectItem value="Lecture Slides">
+                  📊 Lecture Slides
+                </SelectItem>
+                <SelectItem value="Course Notes">📝 Course Notes</SelectItem>
+                <SelectItem value="Syllabus">📋 Syllabus</SelectItem>
+              </SelectContent>
+            </Select>
+
+            <Select value={limit} onValueChange={setLimit}>
+              <SelectTrigger className="w-[120px]">
+                <SelectValue placeholder="Results" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="5">5 results</SelectItem>
+                <SelectItem value="10">10 results</SelectItem>
+                <SelectItem value="20">20 results</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
         </form>
 
         {/* Error Message */}
@@ -201,43 +254,64 @@ export default function SearchInterface() {
 
         {/* Results */}
         <div className="space-y-4">
-          {results.map((result) => (
-            <Card
-              key={result.id}
-              className="transition-all hover:shadow-md hover:border-primary/30 group"
-            >
-              <CardHeader className="pb-2">
-                <div className="flex justify-between items-start gap-4">
-                  <div className="space-y-1.5 flex-1">
-                    <div className="flex items-center gap-2">
-                      <Badge variant="secondary" className="text-xs">
-                        {result.category}
-                      </Badge>
-                      <span className="text-xs text-muted-foreground font-mono">
-                        {(result.score * 100).toFixed(1)}% match
-                      </span>
+          {results.map((result) => {
+            const typeStyle = getTypeStyle(result.resource_type);
+            const TypeIcon = typeStyle.icon;
+
+            return (
+              <Card
+                key={result.id}
+                className="transition-all hover:shadow-md hover:border-primary/30 group"
+              >
+                <CardHeader className="pb-2">
+                  <div className="flex justify-between items-start gap-4">
+                    <div className="space-y-2 flex-1">
+                      {/* Badges Row */}
+                      <div className="flex items-center gap-2 flex-wrap">
+                        <Badge className={`text-xs gap-1 ${typeStyle.color}`}>
+                          <TypeIcon className="size-3" />
+                          {result.resource_type}
+                        </Badge>
+                        <Badge variant="outline" className="text-xs">
+                          {result.source}
+                        </Badge>
+                        <span className="text-xs text-muted-foreground font-mono">
+                          {(result.score * 100).toFixed(0)}% match
+                        </span>
+                      </div>
+
+                      {/* Title */}
+                      <CardTitle className="text-lg leading-snug">
+                        <a
+                          href={result.url}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="hover:text-primary transition-colors inline-flex items-center gap-1.5 group-hover:underline"
+                        >
+                          {result.title}
+                          <ExternalLink className="size-3.5 opacity-0 group-hover:opacity-100 transition-opacity" />
+                        </a>
+                      </CardTitle>
+
+                      {/* Authors */}
+                      {result.authors && result.authors.length > 0 && (
+                        <p className="text-xs text-muted-foreground">
+                          By: {result.authors.slice(0, 3).join(", ")}
+                          {result.authors.length > 3 &&
+                            ` +${result.authors.length - 3} more`}
+                        </p>
+                      )}
                     </div>
-                    <CardTitle className="text-lg leading-snug">
-                      <a
-                        href={result.url}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="hover:text-primary transition-colors inline-flex items-center gap-1.5 group-hover:underline"
-                      >
-                        {result.title}
-                        <ExternalLink className="size-3.5 opacity-0 group-hover:opacity-100 transition-opacity" />
-                      </a>
-                    </CardTitle>
                   </div>
-                </div>
-              </CardHeader>
-              <CardContent>
-                <CardDescription className="text-sm leading-relaxed line-clamp-3">
-                  {result.content}
-                </CardDescription>
-              </CardContent>
-            </Card>
-          ))}
+                </CardHeader>
+                <CardContent>
+                  <CardDescription className="text-sm leading-relaxed line-clamp-3">
+                    {result.summary_preview || result.content}
+                  </CardDescription>
+                </CardContent>
+              </Card>
+            );
+          })}
 
           {/* Empty State */}
           {!loading && hasSearched && results.length === 0 && !error && (
@@ -246,7 +320,7 @@ export default function SearchInterface() {
                 <Search className="size-12 mx-auto mb-4 opacity-30" />
                 <p className="text-lg">No results found for "{query}"</p>
                 <p className="text-sm mt-1">
-                  Try different keywords or check your spelling
+                  Try different keywords or adjust your filters
                 </p>
               </div>
             </div>
@@ -256,11 +330,11 @@ export default function SearchInterface() {
           {!hasSearched && !loading && (
             <div className="text-center py-16">
               <div className="text-muted-foreground">
-                <Search className="size-12 mx-auto mb-4 opacity-30" />
-                <p className="text-lg">Enter a search query to get started</p>
+                <GraduationCap className="size-12 mx-auto mb-4 opacity-30" />
+                <p className="text-lg">Search academic resources</p>
                 <p className="text-sm mt-1">
-                  Search for topics like "microservices", "machine learning", or
-                  "kubernetes"
+                  Find papers on "machine learning", lectures on "algorithms",
+                  or notes on "linear algebra"
                 </p>
               </div>
             </div>

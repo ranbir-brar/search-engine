@@ -1,79 +1,73 @@
-import time
+"""
+Atlas Academic Search Engine - Producer
+Orchestrates multiple collectors to ingest academic resources into Kafka.
+"""
+import os
 import json
-import feedparser
+import time
 from kafka import KafkaProducer
-from bs4 import BeautifulSoup
-import ssl
+from collectors.arxiv_collector import ArxivCollector
+from collectors.ocw_collector import OCWCollector
 
-if hasattr(ssl, '_create_unverified_context'):
-    ssl._create_default_https_context = ssl._create_unverified_context
 
-# A curated list of high-quality engineering blogs
-RSS_FEEDS = [
-    "https://netflixtechblog.com/feed",
-    "https://www.uber.com/blog/engineering/rss/",
-    "https://medium.com/airbnb-engineering/feed",
-    "https://instagram-engineering.com/feed",
-    "https://engineering.atspotify.com/feed/",
-    "https://github.blog/category/engineering/feed/",
-    "https://discord.com/blog/rss.xml",
-    "https://aws.amazon.com/blogs/architecture/feed/"
-]
+# --- Kafka Configuration ---
+KAFKA_BOOTSTRAP_SERVERS = os.environ.get('KAFKA_BOOTSTRAP_SERVERS', 'localhost:9092')
+KAFKA_TOPIC = 'news_stream'
 
-def clean_html(html_content):
-    soup = BeautifulSoup(html_content, "html.parser")
-    return soup.get_text(separator=" ", strip=True)
+# --- Collection Configuration ---
+COLLECTION_INTERVAL = 300  # 5 minutes between collection runs
+ITEMS_PER_COLLECTOR = 25   # Max items per collector per run
+
 
 def main():
+    print("🎓 Starting Atlas Academic Resource Collector...")
+    print(f"   Kafka: {KAFKA_BOOTSTRAP_SERVERS}")
+    print(f"   Topic: {KAFKA_TOPIC}")
+    print(f"   Interval: {COLLECTION_INTERVAL}s")
+    print()
+
+    # Initialize Kafka Producer
     producer = KafkaProducer(
-        bootstrap_servers=['localhost:9092'],
+        bootstrap_servers=[KAFKA_BOOTSTRAP_SERVERS],
         value_serializer=lambda x: json.dumps(x).encode('utf-8')
     )
-    
-    seen_links = set()
 
-    print("🚀 Starting Tech Blog Crawler...")
+    # Initialize Collectors
+    collectors = [
+        ArxivCollector(),
+        OCWCollector(),
+    ]
+    
+    print(f"📚 Loaded {len(collectors)} collectors:")
+    for c in collectors:
+        print(f"   - {c.name}")
+    print()
 
     while True:
-        for feed_url in RSS_FEEDS:
+        total_collected = 0
+        
+        for collector in collectors:
             try:
-                print(f"Checking {feed_url}...")
-                # Add User-Agent to avoid blocking
-                feed = feedparser.parse(feed_url, agent="Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36")
+                print(f"\n🔍 Running {collector.name} collector...")
+                payloads = collector.collect(limit=ITEMS_PER_COLLECTOR)
                 
-                for entry in feed.entries[:5]: # Check latest 5 entries per feed
-                    if entry.link not in seen_links:
-                        
-                        # Clean the content (RSS often has HTML)
-                        raw_content = entry.get("content", [{"value": ""}])[0]["value"] or entry.get("summary", "")
-                        clean_text = clean_html(raw_content)
-
-                        # Skip empty articles
-                        if len(clean_text) < 100:
-                            continue
-
-                        payload = {
-                            "title": entry.title,
-                            "url": entry.link,
-                            "published": entry.get("published", ""),
-                            "source": feed.feed.get("title", "Tech Blog"),
-                            "content": clean_text,
-                        }
-                        
-                        try:
-                            future = producer.send('news_stream', payload)
-                            future.get(timeout=10) # Block to ensure send
-                            print(f"Sent: {entry.title}")
-                            seen_links.add(entry.link)
-                        except Exception as k_err:
-                            print(f"ERROR: Kafka send failed: {k_err}")
-                        
+                for payload in payloads:
+                    try:
+                        future = producer.send(KAFKA_TOPIC, payload)
+                        future.get(timeout=10)  # Block to ensure send
+                        total_collected += 1
+                    except Exception as ke:
+                        print(f"   ❌ Kafka send error: {ke}")
+                
+                print(f"   ✅ {collector.name}: Sent {len(payloads)} resources")
+                
             except Exception as e:
-                print(f"Error parsing {feed_url}: {e}")
+                print(f"   ❌ {collector.name} error: {e}")
         
         producer.flush()
-        print("Sleeping for 5 minutes...")
-        time.sleep(300) # Poll every 5 mins
+        print(f"\n📊 Total resources collected this run: {total_collected}")
+        print(f"💤 Sleeping for {COLLECTION_INTERVAL // 60} minutes...")
+        time.sleep(COLLECTION_INTERVAL)
 
 
 if __name__ == "__main__":
