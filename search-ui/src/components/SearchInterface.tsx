@@ -302,22 +302,6 @@ export default function SearchInterface() {
             </div>
           </form>
 
-          {/* Filters - Now on results page */}
-          <Select value={resourceType} onValueChange={setResourceType}>
-            <SelectTrigger className="w-[120px] h-10 bg-card/50 border-border">
-              <SelectValue />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="All">All Types</SelectItem>
-              <SelectItem value="Lecture Slides">Slides</SelectItem>
-              <SelectItem value="Course Notes">Notes</SelectItem>
-              <SelectItem value="Exam">Exams</SelectItem>
-              <SelectItem value="Problem Set">Problem Sets</SelectItem>
-              <SelectItem value="Solutions">Solutions</SelectItem>
-              <SelectItem value="Syllabus">Syllabus</SelectItem>
-            </SelectContent>
-          </Select>
-
           {/* Results Limit */}
           <Select value={limit} onValueChange={setLimit}>
             <SelectTrigger className="w-[80px] h-10 bg-card/50 border-border">
