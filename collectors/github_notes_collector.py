@@ -3,6 +3,7 @@ GitHub Course Notes Collector for Atlas Course Materials Search Engine.
 Crawls GitHub repos containing university course notes and materials.
 """
 import requests
+import os
 from typing import List, Dict, Any
 import time
 import re
@@ -18,33 +19,24 @@ class GitHubNotesCollector(BaseCollector):
     # Known repos with course materials (curated list)
     COURSE_REPOS = [
         # Waterloo
-        {"owner": "kgatjens", "repo": "waterloo_course_notes", "school": "Waterloo"},
-        {"owner": "evykassirer", "repo": "waterloo-cs-notes", "school": "Waterloo"},
+        {"owner": "Dakkers", "repo": "UW-Course-Notes", "school": "Waterloo"},
+        {"owner": "Uberi", "repo": "University-Notes", "school": "Waterloo"},
+        {"owner": "aaronabraham311", "repo": "Notes", "school": "Waterloo"},
         
         # UofT
-        {"owner": "jadenl99", "repo": "UofT-Course-Notes", "school": "UofT"},
+        {"owner": "ICPRplshelp", "repo": "UofT-Notes", "school": "UofT"},
+        {"owner": "tingfengx", "repo": "uoftnotes", "school": "UofT"},
         
-        # Stanford
-        {"owner": "afshinea", "repo": "stanford-cs-229-machine-learning", "school": "Stanford"},
-        {"owner": "afshinea", "repo": "stanford-cs-230-deep-learning", "school": "Stanford"},
-        {"owner": "afshinea", "repo": "stanford-cs-221-artificial-intelligence", "school": "Stanford"},
+        # UC Berkeley
+        {"owner": "64bitpandas", "repo": "notes", "school": "Berkeley"},
+        {"owner": "aparande", "repo": "BerkeleyNotes", "school": "Berkeley"},
         
-        # MIT
-        {"owner": "mitmath", "repo": "18S191", "school": "MIT"},
-        {"owner": "mitmath", "repo": "18335", "school": "MIT"},
-        {"owner": "mitmath", "repo": "18065", "school": "MIT"},
-        
-        # Berkeley
-        {"owner": "PKUFlyingPig", "repo": "cs61a", "school": "Berkeley"},
-        {"owner": "PKUFlyingPig", "repo": "cs61b", "school": "Berkeley"},
-        
-        # CMU
-        {"owner": "awesome-cs-courses", "repo": "awesome-cs-courses", "school": "Various"},
-        
-        # General CS
-        {"owner": "ossu", "repo": "computer-science", "school": "Various"},
-        {"owner": "Developer-Y", "repo": "cs-video-courses", "school": "Various"},
+        # McGill
+        {"owner": "francis-piche", "repo": "study-guides-mcgill", "school": "McGill"},
+        {"owner": "kraglalbert", "repo": "mcgill-swe-class-notes", "school": "McGill"},
     ]
+
+
     
     # File extensions to collect
     VALID_EXTENSIONS = ['.pdf', '.md', '.tex', '.ipynb']
@@ -62,8 +54,11 @@ class GitHubNotesCollector(BaseCollector):
             "Accept": "application/vnd.github.v3+json",
             "User-Agent": "Atlas-Course-Collector"
         })
-        # Optional: Add GitHub token for higher rate limits
-        # self.session.headers["Authorization"] = "token YOUR_TOKEN"
+        # Use GitHub token for higher rate limits (5000/hr vs 60/hr)
+        github_token = os.environ.get("GITHUB_TOKEN")
+        if github_token:
+            self.session.headers["Authorization"] = f"token {github_token}"
+            print("[GitHub] Using authenticated requests (5000/hr limit)")
     
     def _get_repo_files(self, owner: str, repo: str, path: str = "") -> List[Dict]:
         """Get files from a GitHub repo using the contents API."""
@@ -123,12 +118,30 @@ class GitHubNotesCollector(BaseCollector):
         text = (filename + " " + path).lower()
         return True  # Accept all PDFs/MDs in course repos
     
-    def _extract_course_name(self, path: str, repo: str) -> str:
-        """Extract course name from path."""
-        # Try to find course code pattern (e.g., CS101, MATH135)
-        match = re.search(r'([A-Z]{2,4})\s*(\d{2,4})', path.upper())
+    def _extract_course_name(self, path: str, filename: str, repo: str) -> str:
+        """Extract course name from path - checks all path components."""
+        # Common course code patterns: CS135, MATH 135, ECE124, etc.
+        course_pattern = r'([A-Z]{2,4})\s*[-_]?\s*(\d{2,4}[A-Z]?)'
+        
+        # Check full path for course code
+        full_text = path.upper()
+        match = re.search(course_pattern, full_text)
         if match:
             return f"{match.group(1)} {match.group(2)}"
+        
+        # Check filename without extension
+        basename = filename.rsplit('.', 1)[0].upper()
+        match = re.search(course_pattern, basename)
+        if match:
+            return f"{match.group(1)} {match.group(2)}"
+        
+        # Check if filename looks like "135_Notes" -> might be course number
+        # Try to extract from parent directory
+        path_parts = path.split('/')
+        for part in path_parts:
+            match = re.search(course_pattern, part.upper())
+            if match:
+                return f"{match.group(1)} {match.group(2)}"
         
         # Fall back to repo name
         return repo.replace('-', ' ').replace('_', ' ').title()
@@ -165,14 +178,15 @@ class GitHubNotesCollector(BaseCollector):
                     continue
                 
                 try:
-                    course_name = self._extract_course_name(path, repo)
+                    course_name = self._extract_course_name(path, filename, repo)
                     resource_type = self._classify_file(filename, path)
                     
-                    # Use download URL for PDFs, html_url for viewing
-                    url = download_url if download_url else html_url
+                    # Use html_url (GitHub blob view) so users view instead of download
+                    url = html_url
                     
-                    title = f"{school}: {course_name} - {filename}"
-                    summary = f"Course material from {school}. File: {filename}. Repository: {owner}/{repo}."
+                    # Better title with course code prominently displayed
+                    title = f"{school} {course_name}: {filename}"
+                    summary = f"Course notes for {course_name} from {school}. File: {filename}. Path: {path}"
                     
                     payload = self.create_payload(
                         title=title,

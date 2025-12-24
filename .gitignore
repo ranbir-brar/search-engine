@@ -63,8 +63,8 @@ checkpoints/
 # Migration scripts with credentials
 migrate_to_cloud.py
 
-# Documentation (not needed in repo)
+# Documentation (local only)
 SPEC.md
 
-# Duplicate deployment configs (use root level)
+# Duplicate deployment configs
 api/
