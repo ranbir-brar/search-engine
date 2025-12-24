@@ -39,8 +39,6 @@ yarn-debug.log*
 yarn-error.log*
 pnpm-debug.log*
 .pnpm-store/
-dist/
-build/
 .next/
 .nuxt/
 .svelte-kit/
@@ -52,9 +50,21 @@ Thumbs.db
 .idea/
 .vscode/
 
-# Environment files
+# Environment files (SENSITIVE)
 .env
 .env.*
+.env.local
+.env.production
 
 # Data/artifacts
 checkpoints/
+*.qdrant/
+
+# Migration scripts with credentials
+migrate_to_cloud.py
+
+# Documentation (not needed in repo)
+SPEC.md
+
+# Duplicate deployment configs (use root level)
+api/
