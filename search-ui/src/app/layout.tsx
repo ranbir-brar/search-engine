@@ -5,8 +5,11 @@ import "./globals.css";
 const inter = Inter({ subsets: ["latin"] });
 
 export const metadata: Metadata = {
-  title: "Neural Seek",
-  description: "High-performance semantic search",
+  title: "Atlas",
+  description: "Semantic search for course materials",
+  icons: {
+    icon: "/icon.svg",
+  },
 };
 
 export default function RootLayout({

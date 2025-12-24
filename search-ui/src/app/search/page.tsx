@@ -116,7 +116,7 @@ function SearchContent() {
               <span
                 className={`text-xl font-bold bg-gradient-to-r ${theme.accent} text-transparent bg-clip-text hidden sm:block`}
               >
-                Neural Seek
+                Atlas
               </span>
             </div>
 
