@@ -4,19 +4,17 @@ from .ocw_collector import OCWCollector
 from .stanford_collector import StanfordCollector
 from .harvard_collector import HarvardCollector
 from .yale_collector import YaleCollector
-from .waterloo_collector import WaterlooCollector
-from .uoft_collector import UofTCollector
-from .ubc_collector import UBCCollector
-from .mcgill_collector import McGillCollector
+from .cmu_collector import CMUCollector
+from .github_notes_collector import GitHubNotesCollector
 
 __all__ = [
     'BaseCollector',
+    # Bucket A: Deep Crawl - Centralized Portals
     'OCWCollector',
+    'YaleCollector',
+    'CMUCollector',
     'StanfordCollector',
     'HarvardCollector',
-    'YaleCollector',
-    'WaterlooCollector',
-    'UofTCollector',
-    'UBCCollector',
-    'McGillCollector',
+    # Bucket B: GitHub Repos
+    'GitHubNotesCollector',
 ]

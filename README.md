@@ -1,19 +1,13 @@
 # Atlas Course Materials Search Engine
 
-A semantic search engine for university course materials including lecture notes, exams, problem sets, and solutions from top US and Canadian universities.
-
-## Features
-
-- **Semantic Search**: Find relevant course materials using natural language queries
-- **8 University Sources**: MIT, Stanford, Harvard, Yale + Waterloo, UofT, UBC, McGill
-- **Resource Types**: Lecture slides, course notes, exams, problem sets, solutions
+A semantic search engine for university course materials: lecture notes, exams, problem sets, and solutions.
 
 ## Architecture
 
 ```
 ┌─────────────┐     ┌─────────┐     ┌───────────────┐     ┌────────┐
 │  Collectors │────▶│  Kafka  │────▶│ Spark Stream  │────▶│ Qdrant │
-│  (8 schools)│     │         │     │  (Embeddings) │     │(Vector)│
+│  (6 total)  │     │         │     │  (Embeddings) │     │(Vector)│
 └─────────────┘     └─────────┘     └───────────────┘     └────────┘
                                                                │
 ┌─────────────┐     ┌─────────┐                                │
@@ -21,6 +15,29 @@ A semantic search engine for university course materials including lecture notes
 │   Frontend  │     │   API   │
 └─────────────┘     └─────────┘
 ```
+
+## Data Sources
+
+### Bucket A: Centralized Open Courseware (Deep Crawl)
+
+These have stable portals for systematic crawling:
+
+| Source           | Content                                      |
+| ---------------- | -------------------------------------------- |
+| **MIT OCW**      | 1800+ courses with PDFs, exams, problem sets |
+| **Yale OYC**     | ~40 courses with lectures, transcripts       |
+| **CMU OLI**      | Free learning modules (stats, CS, chemistry) |
+| **Stanford SEE** | Engineering courses                          |
+| **Harvard CS50** | Intro CS course materials                    |
+
+### Bucket B: GitHub Repos (Course Notes)
+
+Curated repos with student/professor notes:
+
+- Stanford CS229/230/221 cheatsheets
+- MIT math courses (18S191, 18335, 18065)
+- Berkeley CS61A/B notes
+- Waterloo/UofT course notes
 
 ## Quick Start
 
@@ -37,22 +54,6 @@ cd search-ui && npm run dev
 # Start data collection
 python producer.py
 ```
-
-## Universities Covered
-
-### US Schools
-
-- **MIT OCW** - Full courses with exams and problem sets
-- **Stanford SEE** - Engineering courses
-- **Harvard CS50** - Intro to Computer Science
-- **Yale OYC** - Open Yale Courses
-
-### Canadian Schools
-
-- **UWaterloo** - CS and Math courses
-- **UofT** - Computer Science
-- **UBC** - CS and Math
-- **McGill** - CS and Math
 
 ## Tech Stack
 

@@ -1,6 +1,6 @@
 """
 Atlas Course Materials Search Engine - Producer
-Orchestrates collectors to ingest course materials (lectures, exams, problem sets) into Kafka.
+Two-bucket architecture for collecting course materials.
 """
 import os
 import json
@@ -10,10 +10,8 @@ from collectors.ocw_collector import OCWCollector
 from collectors.stanford_collector import StanfordCollector
 from collectors.harvard_collector import HarvardCollector
 from collectors.yale_collector import YaleCollector
-from collectors.waterloo_collector import WaterlooCollector
-from collectors.uoft_collector import UofTCollector
-from collectors.ubc_collector import UBCCollector
-from collectors.mcgill_collector import McGillCollector
+from collectors.cmu_collector import CMUCollector
+from collectors.github_notes_collector import GitHubNotesCollector
 
 
 # --- Kafka Configuration ---
@@ -29,7 +27,6 @@ def main():
     print("Starting Atlas Course Materials Collector...")
     print(f"   Kafka: {KAFKA_BOOTSTRAP_SERVERS}")
     print(f"   Topic: {KAFKA_TOPIC}")
-    print(f"   Interval: {COLLECTION_INTERVAL}s")
     print()
 
     # Initialize Kafka Producer
@@ -38,23 +35,26 @@ def main():
         value_serializer=lambda x: json.dumps(x).encode('utf-8')
     )
 
-    # Initialize Collectors - US + Canadian Schools
+    # Two-Bucket Architecture
     collectors = [
-        # US Schools
+        # Bucket A: Deep Crawl - Centralized Open Courseware
         OCWCollector(),        # MIT OpenCourseWare
-        StanfordCollector(),   # Stanford Engineering Everywhere
-        HarvardCollector(),    # Harvard CS50
         YaleCollector(),       # Yale Open Yale Courses
-        # Canadian Schools
-        WaterlooCollector(),   # University of Waterloo
-        UofTCollector(),       # University of Toronto
-        UBCCollector(),        # University of British Columbia
-        McGillCollector(),     # McGill University
+        CMUCollector(),        # CMU Open Learning Initiative
+        StanfordCollector(),   # Stanford SEE
+        HarvardCollector(),    # Harvard CS50
+        
+        # Bucket B: GitHub Course Notes
+        GitHubNotesCollector(),  # Waterloo, UofT, Stanford, MIT, Berkeley
     ]
     
     print(f"Loaded {len(collectors)} collectors:")
-    for c in collectors:
-        print(f"   - {c.name}")
+    print("   Bucket A (Centralized Portals):")
+    for c in collectors[:5]:
+        print(f"      - {c.name}")
+    print("   Bucket B (GitHub Repos):")
+    for c in collectors[5:]:
+        print(f"      - {c.name}")
     print()
 
     while True:
@@ -68,7 +68,7 @@ def main():
                 for payload in payloads:
                     try:
                         future = producer.send(KAFKA_TOPIC, payload)
-                        future.get(timeout=10)  # Block to ensure send
+                        future.get(timeout=10)
                         total_collected += 1
                     except Exception as ke:
                         print(f"   Kafka send error: {ke}")
