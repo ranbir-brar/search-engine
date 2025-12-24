@@ -16,9 +16,9 @@ from qdrant_client.http.models import PointStruct, VectorParams, Distance
 # --- Configuration ---
 KAFKA_BOOTSTRAP_SERVERS = os.environ.get("KAFKA_BOOTSTRAP_SERVERS", "kafka:29092")
 KAFKA_TOPIC = "atlas_resources"
-QDRANT_HOST = "qdrant"
-QDRANT_PORT = 6333
-COLLECTION_NAME = "atlas_resources"  # Renamed for Atlas
+QDRANT_URL = os.environ.get("QDRANT_URL", "http://qdrant:6333")
+QDRANT_API_KEY = os.environ.get("QDRANT_API_KEY", None)
+COLLECTION_NAME = "atlas_resources"
 
 # Updated schema for Atlas academic resources
 schema = StructType([
@@ -60,7 +60,10 @@ def process_batch(df, epoch_id):
 
     try:
         model = SentenceTransformer("all-MiniLM-L6-v2")
-        client = QdrantClient(host=QDRANT_HOST, port=QDRANT_PORT)
+        if QDRANT_API_KEY:
+            client = QdrantClient(url=QDRANT_URL, api_key=QDRANT_API_KEY)
+        else:
+            client = QdrantClient(url=QDRANT_URL)
         
         # Ensure collection exists
         try:

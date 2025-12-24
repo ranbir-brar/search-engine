@@ -26,6 +26,7 @@ app.add_middleware(
 
 # --- Configuration ---
 QDRANT_URL = os.environ.get("QDRANT_URL", "http://qdrant:6333")
+QDRANT_API_KEY = os.environ.get("QDRANT_API_KEY", None)
 COLLECTION_NAME = "atlas_resources"
 
 # Valid resource types for filtering
@@ -36,7 +37,24 @@ print("Loading SentenceTransformer model...")
 model = SentenceTransformer("all-MiniLM-L6-v2")
 print("Model loaded!")
 
-client = QdrantClient(url=QDRANT_URL)
+# Connect to Qdrant (with optional API key for cloud)
+if QDRANT_API_KEY:
+    print(f"Connecting to Qdrant Cloud: {QDRANT_URL[:50]}...")
+    client = QdrantClient(url=QDRANT_URL, api_key=QDRANT_API_KEY)
+else:
+    print(f"Connecting to Qdrant: {QDRANT_URL}")
+    client = QdrantClient(url=QDRANT_URL)
+
+
+# --- Health Check ---
+@app.get("/health")
+def health_check():
+    """Health check endpoint for deployment platforms."""
+    try:
+        client.get_collection(COLLECTION_NAME)
+        return {"status": "healthy", "qdrant": "connected"}
+    except:
+        return {"status": "degraded", "qdrant": "disconnected"}
 
 
 # --- Data Models ---
