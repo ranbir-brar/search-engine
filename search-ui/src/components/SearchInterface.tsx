@@ -42,7 +42,7 @@ interface SearchResult {
   summary_preview?: string;
 }
 
-const API_URL = "http://localhost:8000";
+const API_URL = "https://bean4259-atlas-search.hf.space";
 
 const TYPE_STYLES: Record<string, { color: string; icon: React.ElementType }> =
   {
